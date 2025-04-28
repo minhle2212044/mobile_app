@@ -1,8 +1,10 @@
 import {
-    Controller, Get, Post, Body, Param, Put, Delete, ParseIntPipe,
+    Controller, Get, Post, Body, Param, Put, Delete, ParseIntPipe, UseGuards
   } from '@nestjs/common';
   import { UserService } from './user.service';
-  
+  import { JwtGuard } from '../auth/guard';
+  import { User } from '@prisma/client';
+  @UseGuards(JwtGuard)
   @Controller('api/v1/users')
   export class UserController {
     constructor(private readonly userService: UserService) {}

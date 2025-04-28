@@ -15,25 +15,137 @@ generator client {
 
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   name      String
-  email     String   @unique
-  password  String
-  sdt       String   @unique
-  dob       DateTime
   address   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dob       DateTime
+  gender    String
+  email     String    @unique
+  tel     String
+  password  String
+  role      String     @default("CUSTOMER")
+  collector Collector?
+  customer  Customer?
+}
+
+model Collector {
+  id       Int      @id @default(autoincrement())
+  license  String
+  user     User     @relation(fields: [id], references: [id])
+  centers  Center[]
+}
+
+model Customer {
+  id       Int      @id @default(autoincrement())
+  points   Int      @default(0)
+  user     User     @relation(fields: [id], references: [id])
+  orders   Order[]
+}
+
+model Center {
+  id          Int             @id @default(autoincrement())
+  name        String
+  address     String
+  collectorId Int
+  collector   Collector        @relation(fields: [collectorId], references: [id])
+  schedules   Schedule[]
+  days        CenterDay[]
+  collects    CenterCollect[]
+  orders      Order[]
+}
+
+model CenterDay {
+  centerId Int
+  day      String
+  time     DateTime
+
+  center   Center @relation(fields: [centerId], references: [id])
+
+  @@id([centerId, day])
+}
+
+model Schedule {
+  id         Int      @id @default(autoincrement())
+  centerId   Int
+  startTime  DateTime
+  endTime    DateTime
+
+  center     Center   @relation(fields: [centerId], references: [id])
 }
 
 model Material {
-  id                     Int      @id @default(autoincrement())
-  name                   String
-  category               String
-  recyclingCode          String?    // optional
-  description            String?
-  points                 Int
-  recyclingInstructions  String?
-  isHazardous            Boolean    @default(false)
-  createdAt              DateTime   @default(now())
+  id          Int      @id @default(autoincrement())
+  category    String
+  name        String
+  description String
+  instruction String
+  types       Type[]
+}
+
+model Type {
+  name         String    @id
+  points       Int
+  materialId   Int
+  isHazardous  Boolean
+  
+  material     Material  @relation(fields: [materialId], references: [id])
+  orderItems   OrderItem[]
+  centerCollects CenterCollect[]
+}
+
+model Reward {
+  id           Int        @id @default(autoincrement())
+  name         String
+  type         String
+  description  String
+  points       Int
+  orderRewards OrderReward[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  date        DateTime
+  code        String      @unique
+  transport   String
+  status      String
+  points      Int         @default(0)
+  customerId  Int
+  centerId    Int
+
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  center      Center      @relation(fields: [centerId], references: [id])
+  items       OrderItem[]
+  rewards     OrderReward[]
+}
+
+model OrderItem {
+  orderId    Int
+  typeName   String
+  quantity   Int
+
+  order      Order @relation(fields: [orderId], references: [id])
+  type       Type  @relation(fields: [typeName], references: [name])
+
+  @@id([orderId, typeName])
+}
+
+model CenterCollect {
+  centerId   Int
+  typeName   String
+
+  center     Center @relation(fields: [centerId], references: [id])
+  type       Type   @relation(fields: [typeName], references: [name])
+
+  @@id([centerId, typeName])
+}
+
+model OrderReward {
+  orderId   Int
+  rewardId  Int
+  quantity  Int
+
+  order     Order  @relation(fields: [orderId], references: [id])
+  reward    Reward @relation(fields: [rewardId], references: [id])
+
+  @@id([orderId, rewardId])
 }
