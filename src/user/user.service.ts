@@ -25,4 +25,21 @@ export class UserService {
   remove(id: number) {
     return this.prisma.user.delete({ where: { id } });
   }
+
+  findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  async updatePassword(id: number, newPassword: string) {
+    const hashedPassword = await this.hashPassword(newPassword);
+    return this.prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+  }
+
+  private async hashPassword(password: string): Promise<string> {
+    const argon2 = await import('argon2');
+    return argon2.hash(password);
+  }
 }
