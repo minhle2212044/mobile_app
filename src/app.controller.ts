@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Get,
@@ -11,8 +10,5 @@ import {
 
 @Controller()
 export class AppController {
-  constructor(
-    
-  ) {}
-
+  constructor() {}
 }
