@@ -5,10 +5,11 @@ import {
   HttpStatus,
   Post,
   Req,
+  Query
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { AuthDto } from './dto';
+import { AuthDto, RefreshTokenDto } from './dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -93,5 +94,20 @@ export class AuthController {
   @Post('signin')
   signin(@Body() dto: AuthDto) {
     return this.authService.signin(dto);
+  }
+
+  @ApiOperation({ summary: "This is the API for refresh token getting" })
+  @ApiBody({ type: RefreshTokenDto, required: true })
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh-token')
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+      return await this.authService.refreshToken(dto.id, dto.email)
+  }
+
+  @ApiOperation({ summary: "This is the API for access token resigning" })
+  @Post('resign-access-token')
+  @ApiQuery({ name: "refresh_token", type: String, required: true, description: "Refresh token" })
+  async reSignAccessToken(@Query('refresh_token') refresh_token: string) {
+      return await this.authService.reSignAccessToken(refresh_token)
   }
 }

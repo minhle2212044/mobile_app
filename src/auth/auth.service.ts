@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { AuthDto } from './dto';
 import * as argon from 'argon2';
-import { Prisma } from '@prisma/client'; // Sửa lại import này
+import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
@@ -27,7 +27,7 @@ export class AuthService {
           dob: dto.dob ? new Date(dto.dob) : new Date(),
           address: dto.address || '',
           gender: dto.gender || 'Male',
-          role: dto.role,
+          role: dto.role || 'CUSTOMER',
         },
       });
 
@@ -80,10 +80,12 @@ export class AuthService {
     }
 
     const token = await this.signToken(user.id, user.email);
+    const refresh_token = await this.refreshToken(user.id, user.email);
 
     return {
       user: user.id,
       access_token: token.access_token,
+      refresh_token: refresh_token,
       message: 'Login successful',
     };
   }
@@ -107,4 +109,56 @@ export class AuthService {
       access_token: token,
     };
   }
+
+  async reSignAccessToken(refresh_token: string): Promise<{ access_token: string }> {
+        try {
+            const payload = (await this.jwt.verifyAsync(refresh_token, {
+                secret: process.env.REFRESH_TOKEN_SECRET,
+            }))
+
+            return await this.signToken(payload.sub, payload.email);
+        } catch (err) {
+            throw new ForbiddenException(err);
+        }
+    }
+
+
+  async refreshToken(id: number, email: string): Promise<string> {
+        let user = await this.prisma.user.findUnique({
+            where: {
+                id: id
+            }
+        })
+
+        if (!user) {
+            throw new ForbiddenException("Cannot find the user")
+        }
+
+        const secret = process.env.REFRESH_TOKEN_SECRET
+
+        const payload = {
+            sub: id,
+            email
+        }
+
+        try {
+            const token = await this.jwt.signAsync(payload, {
+                expiresIn: '15m',
+                secret: secret
+            })
+
+            user = await this.prisma.user.update({
+                where: {
+                    id: id
+                },
+                data: {
+                    accessToken: token
+                }
+            })
+
+            return token
+        } catch (err) {
+            throw new ForbiddenException(err)
+        }
+    }
 }

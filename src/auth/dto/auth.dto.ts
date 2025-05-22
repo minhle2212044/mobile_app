@@ -88,3 +88,15 @@ export class AuthDto {
   @IsOptional()
   points?: number;
 }
+
+export class RefreshTokenDto {
+    @IsNotEmpty()
+    @IsString()
+    @ApiProperty({type: String, description: "ID", required: true, default: "2212044"})
+    id: number
+
+    @IsNotEmpty()
+    @IsString()
+    @ApiProperty({type: String, description: "User email", required: true, default: ""})
+    email: string
+}
