@@ -59,8 +59,8 @@ model Center {
 model CenterDay {
   centerId Int
   day      String
-  time     DateTime
-
+  startTime DateTime
+  endTime   DateTime
   center   Center @relation(fields: [centerId], references: [id])
 
   @@id([centerId, day])
@@ -130,7 +130,7 @@ model OrderItem {
   type       Type  @relation(fields: [typeName], references: [name])
 
   @@id([orderId, typeName])
-}
+} 
 
 model CenterCollect {
   centerId   Int

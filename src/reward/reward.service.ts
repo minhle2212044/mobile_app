@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException,ForbiddenException} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { Reward } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
