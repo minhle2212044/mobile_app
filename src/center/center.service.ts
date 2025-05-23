@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { Center } from '@prisma/client';
+import { Center, CenterCollect, Collector, Type, User } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-
+import { CenterDetailDto } from './dto';
 
 interface CreateCenterInput extends Omit<Center, 'id' | 'imageUrl'> {
   workingDays?: {
@@ -63,10 +63,38 @@ export class CenterService {
     return centerWithDays;
   }
 
-  async getCenterById(id: number): Promise<Center> {
-    const center = await this.prisma.center.findUnique({ where: { id } });
+  async getCenterById(id: number): Promise<CenterDetailDto> {
+    const center = await this.prisma.center.findUnique({
+        where: { id },
+        include: {
+        collects: { include: { type: true } },
+        collector: { include: { user: true } },
+        days: true,
+        },
+    });
+
     if (!center) throw new NotFoundException('Center not found');
-    return center;
+
+    return {
+        id: center.id,
+        name: center.name,
+        address: center.address,
+        materials: center.collects.map(c => ({
+            name: c.type.name,
+            points: c.type.points,
+            isHazardous: c.type.isHazardous,
+        })),
+        contact: {
+            name: center.collector.user.name,
+            email: center.collector.user.email,
+            tel: center.collector.user.tel,
+        },
+        workingTimes: center.days.map(day => ({
+            day: day.day,
+            startTime: day.startTime.toISOString(),
+            endTime: day.endTime.toISOString(),
+        })),
+    };
   }
 
   async getAllCenters(

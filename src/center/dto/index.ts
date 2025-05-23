@@ -1,1 +1,1 @@
-//import * from './center.dto';
+export * from './center.dto';

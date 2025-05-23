@@ -11,8 +11,9 @@ import {
   UseInterceptors,
   ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiOkResponse, ApiTags, ApiParam, ApiBody, ApiNotFoundResponse } from '@nestjs/swagger';
 import { CenterService } from './center.service';
+import { CenterDetailDto } from './dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Center } from '@prisma/client';
 
@@ -41,9 +42,12 @@ export class CenterController {
   }
 
   @Get(':id')
-  async getCenterById(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<Center> {
+  @ApiOkResponse({
+    description: 'Lấy thông tin chi tiết của cơ sở thu gom',
+    type: CenterDetailDto,
+  })
+  @ApiNotFoundResponse({ description: 'Center not found' })
+  async getCenterById(@Param('id', ParseIntPipe) id: number): Promise<CenterDetailDto> {
     return this.centerService.getCenterById(id);
   }
 
