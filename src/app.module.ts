@@ -5,6 +5,7 @@ import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { RewardModule } from './reward/reward.module';
 import { PrismaService } from './prisma.service';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { PrismaService } from './prisma.service';
     UserModule,
     AuthModule,
     UserModule,
-    RewardModule
+    RewardModule,
+    CloudinaryModule
   ],
   controllers: [AppController],
   providers: [PrismaService],

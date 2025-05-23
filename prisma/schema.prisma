@@ -48,6 +48,7 @@ model Center {
   name        String
   address     String
   collectorId Int
+  imageUrl    String?
   collector   Collector        @relation(fields: [collectorId], references: [id])
   schedules   Schedule[]
   days        CenterDay[]
@@ -100,6 +101,7 @@ model Reward {
   type         String
   description  String
   points       Int
+  imageUrl     String?
   orderRewards OrderReward[]
 }
 
