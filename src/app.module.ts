@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CenterModule } from './center/center.module';
 import { MaterialModule } from './material/material.module';
 import { TypeModule } from './type/type.module';
+import { OrderModule } from './order/order.module';
 import { RewardModule } from './reward/reward.module';
 import { PrismaService } from './prisma.service';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
@@ -21,6 +22,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     CenterModule,
     MaterialModule,
     TypeModule,
+    OrderModule,
     RewardModule,
     CloudinaryModule
   ],
