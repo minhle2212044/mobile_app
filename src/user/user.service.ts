@@ -91,4 +91,57 @@ export class UserService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
   }
+
+  async getRecycledMaterialStatsByUser(userId: number) {
+  try {
+    // Lấy thông tin customerId từ user
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: userId },
+      include: {
+        orders: {
+          include: {
+            items: {
+              include: {
+                type: {
+                  include: {
+                    material: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found for this user');
+    }
+
+    // Gom khối lượng theo category
+    const categoryMap: Record<string, number> = {};
+    let totalKg = 0;
+
+    for (const order of customer.orders) {
+      for (const item of order.items) {
+        const category = item.type.material.category;
+        const quantity = item.quantity;
+        categoryMap[category] = (categoryMap[category] || 0) + quantity;
+        totalKg += quantity;
+      }
+    }
+
+    // Trả về kết quả dạng { category, totalKg, percentage }
+    const result = Object.entries(categoryMap).map(([category, kg]) => ({
+      category,
+      totalKg: kg,
+      percentage: totalKg > 0 ? (kg / totalKg) * 100 : 0,
+    }));
+
+    return result;
+  } catch (error) {
+    throw this.handleUnknownError(error, 'get recycled material stats by user');
+  }
+}
+
 }

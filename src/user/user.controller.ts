@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Put,
+  Patch,
   Delete,
   ParseIntPipe,
   UseGuards,
@@ -210,5 +211,37 @@ export class UserController {
     @Body('newPassword') newPassword: string,
   ) {
     return this.userService.updatePassword(id, newPassword);
+  }
+
+  @ApiOperation({ summary: 'Get recycled material statistics by user ID' })
+  @ApiParam({
+    name: 'id',
+    description: 'User ID to get recycling stats for',
+    example: 1,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Recycled material statistics',
+    schema: {
+      example: [
+        {
+          category: 'Plastic',
+          totalKg: 15,
+          percentage: 37.5,
+        },
+        {
+          category: 'Metal',
+          totalKg: 25,
+          percentage: 62.5,
+        },
+      ],
+    },
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @Get(':id/recycle-stats')
+  @HttpCode(HttpStatus.OK)
+  async getRecycleStats(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.getRecycledMaterialStatsByUser(id);
   }
 }
