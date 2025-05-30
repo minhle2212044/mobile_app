@@ -63,10 +63,13 @@ export class AuthService {
   }
 
   async signin(dto: AuthDto) {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.user.findFirst({
       where: {
-        email: dto.email,
-      },
+        OR: [
+          { email: dto.email },
+          { tel: dto.tel },
+        ]
+      }
     });
 
     if (!user) {
@@ -161,4 +164,21 @@ export class AuthService {
             throw new ForbiddenException(err)
         }
     }
+
+  async verifyToken(token: string, type: 'access' | 'refresh' = 'access'): Promise<any> {
+  try {
+    const secret =
+      type === 'access'
+        ? this.config.get('JWT_SECRET')
+        : this.config.get('REFRESH_TOKEN_SECRET');
+
+    const payload = await this.jwt.verifyAsync(token, {
+      secret: secret,
+    });
+
+    return payload;
+  } catch (err) {
+    throw new ForbiddenException('Invalid or expired token');
+  }
+}
 }

@@ -3,9 +3,11 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Headers,
   Post,
   Req,
-  Query
+  Query,
+  ForbiddenException
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -109,5 +111,41 @@ export class AuthController {
   @ApiQuery({ name: "refresh_token", type: String, required: true, description: "Refresh token" })
   async reSignAccessToken(@Query('refresh_token') refresh_token: string) {
       return await this.authService.reSignAccessToken(refresh_token)
+  }
+
+  @ApiOperation({ summary: "Verify access token from Authorization header" })
+  @ApiResponse({
+    status: 200,
+    description: 'Token is valid.',
+    schema: {
+      example: {
+        message: 'Token is valid',
+        sub: 1,
+        email: 'example@example.com',
+        iat: 1717123456,
+        exp: 1717127056,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Invalid or expired token.',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'Invalid or expired token',
+        error: 'Forbidden',
+      },
+    },
+  })
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-token')
+  verifyTokenFromHeader(@Headers('authorization') authHeader: string) {
+    const token = authHeader?.split(' ')[1];
+    if (!token) {
+      throw new ForbiddenException('No token provided');
+    }
+
+    return this.authService.verifyToken(token);
   }
 }

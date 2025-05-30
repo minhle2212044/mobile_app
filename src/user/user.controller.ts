@@ -51,6 +51,8 @@ export class UserController {
       ],
     },
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get()
   @HttpCode(HttpStatus.OK)
   findAll() {
@@ -79,6 +81,9 @@ export class UserController {
       ],
     },
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -116,6 +121,9 @@ export class UserController {
       ],
     },
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   update(@Param('id', ParseIntPipe) id: number, @Body() body: Partial<User>) {
@@ -128,6 +136,9 @@ export class UserController {
     status: 204,
     description: 'User deleted successfully',
   })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number) {
@@ -160,6 +171,9 @@ export class UserController {
       ],
     },
   })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Get('email/:email')
   @HttpCode(HttpStatus.OK)
   findByEmail(@Param('email') email: string) {
@@ -186,6 +200,9 @@ export class UserController {
       },
     },
   })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   @Put(':id/password')
   @HttpCode(HttpStatus.OK)
   updatePassword(

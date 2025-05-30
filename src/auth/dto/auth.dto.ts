@@ -10,8 +10,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AuthDto {
   @ApiProperty({
-    description: 'Email of the user',
-    example: 'example@example.com',
+    description: 'Tel of the user',
+    example: '123456789',
   })
   @IsEmail()
   @IsNotEmpty()
