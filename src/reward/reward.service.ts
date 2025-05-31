@@ -139,4 +139,38 @@ export class RewardService {
       limit,
     };
   }
+
+  async toggleFavoriteReward(userId: number, rewardId: number): Promise<{ status: 'added' | 'removed' }> {
+    const reward = await this.prisma.reward.findUnique({ where: { id: rewardId } });
+    if (!reward) throw new NotFoundException(`Reward with ID ${rewardId} not found`);
+
+    const existing = await this.prisma.customerReward.findUnique({
+      where: {
+        customerId_rewardId: {
+          customerId: userId,
+          rewardId,
+        },
+      },
+    });
+
+    if (existing) {
+      await this.prisma.customerReward.delete({
+        where: {
+          customerId_rewardId: {
+            customerId: userId,
+            rewardId,
+          },
+        },
+      });
+      return { status: 'removed' };
+    } else {
+      await this.prisma.customerReward.create({
+        data: {
+          customerId: userId,
+          rewardId,
+        },
+      });
+      return { status: 'added' };
+    }
+  }
 } 

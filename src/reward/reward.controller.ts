@@ -6,11 +6,13 @@ import {
   Query,
   Param,
   Put,
+  Patch,
   Delete,
   ParseIntPipe,
   UseGuards,
   UploadedFile, 
   UseInterceptors,
+  NotFoundException,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -159,5 +161,19 @@ export class RewardController {
       parseInt(page, 10),
       parseInt(limit, 10),
     );
+  }
+
+  @Patch('favorite')
+  async toggleFavoriteReward(
+    @Query('userId') userId: string,
+    @Query('rewardId') rewardId: string,
+  ) {
+    const uid = parseInt(userId);
+    const rid = parseInt(rewardId);
+    if (isNaN(uid) || isNaN(rid)) {
+      throw new NotFoundException('Invalid userId or rewardId');
+    }
+
+    return this.rewardService.toggleFavoriteReward(uid, rid);
   }
 }
