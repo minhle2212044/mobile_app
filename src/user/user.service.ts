@@ -33,9 +33,32 @@ export class UserService {
 
   async findOne(id: number) {
     try {
-      const user = await this.prisma.user.findUnique({ where: { id } });
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          customer: {
+            include: {
+              orders: {
+                select: {
+                  points: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
       if (!user) throw new NotFoundException('User not found');
-      return user;
+
+      const orders = user.customer?.orders || [];
+      const totalOrders = orders.length;
+      const totalPoints = orders.reduce((sum, order) => sum + order.points, 0);
+
+      return {
+        ...user,
+        totalOrders,
+        totalPoints,
+      };
     } catch (error) {
       throw this.handleUnknownError(error, 'get user');
     }
@@ -135,7 +158,7 @@ export class UserService {
     const result = Object.entries(categoryMap).map(([category, kg]) => ({
       category,
       totalKg: kg,
-      percentage: totalKg > 0 ? (kg / totalKg) * 100 : 0,
+      percentage: totalKg > 0 ? Math.round((kg / totalKg) * 100) : 0,
     }));
 
     return result;
