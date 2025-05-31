@@ -23,6 +23,7 @@ import {
   ApiBody,
   ApiParam,
   ApiBearerAuth,
+  ApiQuery
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RewardService } from './reward.service';
@@ -91,6 +92,7 @@ export class RewardController {
   @Get(':id')
   @ApiOperation({ summary: 'Get reward by ID' })
   @ApiParam({ name: 'id', type: Number })
+  @ApiQuery({ name: 'userId', type: Number, required: true })
   @ApiResponse({
     status: 200,
     description: 'Reward detail by ID',
@@ -101,11 +103,16 @@ export class RewardController {
         type: 'Gift Card',
         description: 'Gift card for e-commerce use',
         points: 100,
+        imageUrl: 'https://example.com/image.jpg',
+        favorite: true,
       },
     },
   })
-  getById(@Param('id', ParseIntPipe) id: number) {
-    return this.rewardService.getRewardById(id);
+  getById(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.rewardService.getRewardById(id, userId);
   }
 
   @Put(':id')

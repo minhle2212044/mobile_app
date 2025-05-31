@@ -66,10 +66,24 @@ export class RewardService {
   }
 
 
-  async getRewardById(id: number): Promise<Reward> {
-    const reward = await this.prisma.reward.findUnique({ where: { id } });
+  async getRewardById(id: number, userId: number): Promise<Reward & { favorite: boolean }> {
+    const reward = await this.prisma.reward.findUnique({
+      where: { id },
+    });
+
     if (!reward) throw new NotFoundException('Reward not found');
-    return reward;
+
+    const favorite = await this.prisma.customerReward.findFirst({
+      where: {
+        rewardId: id,
+        customerId: userId,
+      },
+    });
+
+    return {
+      ...reward,
+      favorite: !!favorite,
+    };
   }
 
   async updateReward(
@@ -77,7 +91,7 @@ export class RewardService {
     data: Partial<Reward>,
     file?: Express.Multer.File,
   ): Promise<Reward> {
-    await this.getRewardById(id);
+    await this.getRewardById1(id);
 
     let imageUrl = '';
 
@@ -95,9 +109,14 @@ export class RewardService {
       },
     });
   }
+  async getRewardById1(id: number): Promise<Reward> {
+    const reward = await this.prisma.reward.findUnique({ where: { id } });
+    if (!reward) throw new NotFoundException('Reward not found');
+    return reward;
+  }
 
   async deleteReward(id: number): Promise<Reward> {
-    await this.getRewardById(id);
+    await this.getRewardById1(id);
     return this.prisma.reward.delete({ where: { id } });
   }
 
@@ -119,7 +138,7 @@ export class RewardService {
         skip,
         take: limit,
         orderBy: {
-          id: 'asc', // 👈 sắp xếp theo id từ nhỏ đến lớn
+          id: 'asc',
         },
       }),
       this.prisma.reward.count({
