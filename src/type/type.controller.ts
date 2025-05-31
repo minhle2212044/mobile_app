@@ -43,7 +43,7 @@ export class TypeController {
     @Query('limit') limit: string,
   ) {
     const pageNum = parseInt(page) || 1;
-    const limitNum = parseInt(limit) || 10;
+    const limitNum = parseInt(limit) || 20;
     return this.materialService.getAllTypes(pageNum, limitNum);
   }
 

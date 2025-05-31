@@ -26,19 +26,36 @@ export class RewardService {
   async getAllRewards(
     page = 1,
     limit = 10,
-  ): Promise<{ data: Reward[]; total: number; page: number; limit: number }> {
+    userId: number
+  ): Promise<{
+    data: (Reward & { isFavorite: boolean })[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const skip = (page - 1) * limit;
 
-    const [data, total] = await this.prisma.$transaction([
+    const [rewards, total] = await this.prisma.$transaction([
       this.prisma.reward.findMany({
         skip,
         take: limit,
         orderBy: {
           id: 'asc',
         },
+        include: {
+          receivers: {
+            where: { customerId: userId },
+            select: { id: true },
+          },
+        },
       }),
       this.prisma.reward.count(),
     ]);
+
+    const data = rewards.map((reward: Reward & { receivers: { id: number }[] }) => ({
+      ...reward,
+      isFavorite: reward.receivers.length > 0,
+    }));
 
     return {
       data,
@@ -47,6 +64,7 @@ export class RewardService {
       limit,
     };
   }
+
 
   async getRewardById(id: number): Promise<Reward> {
     const reward = await this.prisma.reward.findUnique({ where: { id } });

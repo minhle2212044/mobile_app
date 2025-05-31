@@ -39,6 +39,7 @@ model Collector {
 model Customer {
   id       Int      @id @default(autoincrement())
   points   Int      @default(0)
+  rewards  CustomerReward[]
   user     User     @relation(fields: [id], references: [id])
   orders   Order[]
 }
@@ -85,11 +86,12 @@ model Material {
 }
 
 model Type {
-  name         String    @id
+  id            Int       @unique @default(autoincrement())
+  name          String    @id
   points       Int
   materialId   Int
   isHazardous  Boolean
-  
+  description    String    @default("No description yet")
   material     Material  @relation(fields: [materialId], references: [id])
   orderItems   OrderItem[]
   centerCollects CenterCollect[]
@@ -103,6 +105,7 @@ model Reward {
   points       Int
   imageUrl     String?
   orderRewards OrderReward[]
+  receivers    CustomerReward[]
 }
 
 model Order {
@@ -151,4 +154,18 @@ model OrderReward {
   reward    Reward @relation(fields: [rewardId], references: [id])
 
   @@id([orderId, rewardId])
+}
+
+model CustomerReward {
+  id         Int      @id @default(autoincrement())
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId Int
+
+  reward     Reward   @relation(fields: [rewardId], references: [id])
+  rewardId   Int
+
+  
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, rewardId])
 }

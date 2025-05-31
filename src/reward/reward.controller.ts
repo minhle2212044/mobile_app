@@ -73,12 +73,17 @@ export class RewardController {
           type: 'Gift Card',
           description: 'Gift card for e-commerce use',
           points: 100,
+          isFavorite: true,
         },
       ],
     },
   })
-  getAll(@Query('page') page = 1, @Query('limit') limit = 10) {
-    return this.rewardService.getAllRewards(Number(page), Number(limit));
+  getAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('userId') userId: number,
+  ) {
+    return this.rewardService.getAllRewards(Number(page), Number(limit), Number(userId));
   }
 
   @Get(':id')

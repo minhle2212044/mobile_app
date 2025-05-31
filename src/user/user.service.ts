@@ -32,37 +32,52 @@ export class UserService {
   }
 
   async findOne(id: number) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        include: {
-          customer: {
-            include: {
-              orders: {
-                select: {
-                  points: true,
-                },
+  try {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        customer: {
+          include: {
+            orders: {
+              include: {
+                items: true,
               },
             },
           },
         },
-      });
+      },
+    });
 
-      if (!user) throw new NotFoundException('User not found');
+    if (!user || !user.customer) throw new NotFoundException('User not found or not a customer');
 
-      const orders = user.customer?.orders || [];
-      const totalOrders = orders.length;
-      const totalPoints = orders.reduce((sum, order) => sum + order.points, 0);
+    const orders = user.customer.orders;
+    const totalOrders = orders.length;
+    const totalPoints = orders.reduce((sum, order) => sum + order.points, 0);
 
-      return {
-        ...user,
-        totalOrders,
-        totalPoints,
-      };
-    } catch (error) {
-      throw this.handleUnknownError(error, 'get user');
-    }
+    const totalKg = orders.reduce((sum, order) => {
+      const orderItems = order.items || [];
+      return sum + orderItems.reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      tel: user.tel,
+      address: user.address,
+      dob: user.dob,
+      gender: user.gender,
+      role: user.role,
+      password: user.password,
+      totalOrders,
+      totalPoints,
+      totalKg,
+    };
+  } catch (error) {
+    throw this.handleUnknownError(error, 'get user');
   }
+}
+
 
   async update(id: number, data: Partial<User>) {
     try {

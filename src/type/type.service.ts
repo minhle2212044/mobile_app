@@ -42,7 +42,7 @@ export class TypeService {
     return this.prisma.type.delete({ where: { name } });
   }
 
-  async getAllTypes(page = 1, limit = 10): Promise<{ data: Type[]; total: number }> {
+  async getAllTypes(page = 1, limit = 20): Promise<{ data: Type[]; total: number }> {
     const [data, total] = await this.prisma.$transaction([
         this.prisma.type.findMany({
         skip: (page - 1) * limit,
