@@ -1,23 +1,32 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { Type } from '@prisma/client';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class TypeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private cloudinary: CloudinaryService) {}
 
   async addTypeToMaterial(materialId: number, data: {
     name: string;
     points: number;
     isHazardous: boolean;
-  }): Promise<Type> {
+  },
+  file?: Express.Multer.File,): Promise<Type> {
     const material = await this.prisma.material.findUnique({ where: { id: materialId } });
     if (!material) throw new NotFoundException(`Material with ID ${materialId} not found`);
 
+    let imageUrl = '';
+    if (file) {
+      const uploadRes = await this.cloudinary.uploadImage(file, 'types');
+      imageUrl = uploadRes.secure_url;
+    }
     return this.prisma.type.create({
       data: {
         ...data,
         materialId,
+        description: 'No description yet',
+        ...(imageUrl ? { imageUrl } : {}),
       },
     });
   }
@@ -25,13 +34,22 @@ export class TypeService {
   async updateType(name: string, data: {
     points?: number;
     isHazardous?: boolean;
-  }): Promise<Type> {
+  },
+  file?: Express.Multer.File,): Promise<Type> {
     const existingType = await this.prisma.type.findUnique({ where: { name } });
     if (!existingType) throw new NotFoundException(`Type with name "${name}" not found`);
 
+    let imageUrl: string | undefined;
+    if (file) {
+      const uploadRes = await this.cloudinary.uploadImage(file, 'types');
+      imageUrl = uploadRes.secure_url;
+    }
     return this.prisma.type.update({
       where: { name },
-      data,
+      data: {
+        ...data,
+        ...(imageUrl ? { imageUrl } : {}),
+      },
     });
   }
 

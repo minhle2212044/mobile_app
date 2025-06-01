@@ -1,5 +1,5 @@
 // order.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException,  } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
 import { CreateRewardOrderDto, CreateMaterialOrderDto } from './dto';
 
@@ -8,12 +8,15 @@ export class OrderService {
   constructor(private prisma: PrismaService) {}
 
   private generateOrderCode(): string {
-    return (
-      'ORD-' +
-      new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 12) +
-      '-' +
-      Math.floor(1000 + Math.random() * 9000)
-    );
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const numbers = '23456789';
+    const getRandom = (set: string) => set[Math.floor(Math.random() * set.length)];
+
+    let code = '';
+    for (let i = 0; i < 3; i++) code += getRandom(chars);
+    for (let i = 0; i < 3; i++) code += getRandom(numbers);
+
+    return code;
   }
    async createMaterialOrder(data: CreateMaterialOrderDto) {
     const { items, ...orderData } = data;
@@ -50,18 +53,45 @@ export class OrderService {
     return order;
   }
 
-  async createRewardOrder(data: CreateRewardOrderDto) {
-    const { rewards, ...orderData } = data;
+  
+  async createRewardOrder(userId: number) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: userId },
+    });
 
-    const rewardPoints = await this.calculateRewardPoints(rewards || []);
+    if (!customer) {
+      throw new BadRequestException('Không tìm thấy khách hàng tương ứng với userId.');
+    }
+
+    const customerId = customer.id;
+
+    const cartItems = await this.prisma.cartItem.findMany({
+      where: { customerId },
+    });
+
+    if (cartItems.length === 0) {
+      throw new BadRequestException('Giỏ hàng trống, không thể tạo đơn đổi thưởng.');
+    }
+
+    const rewards = cartItems.map((item) => ({
+      rewardId: item.rewardId,
+      quantity: item.quantity,
+    }));
+
+    const rewardPoints = await this.calculateRewardPoints(rewards);
     const code = this.generateOrderCode();
 
     const order = await this.prisma.order.create({
       data: {
-        ...orderData,
+        customerId,
+        centerId: 2,
+        transport: 'Xe máy',
+        status: 'PENDING',
         code,
         date: new Date(),
+        receiveDate: new Date(), // cần nếu trường này là NOT NULL
         points: -rewardPoints,
+        type: "REWARD",
         rewards: {
           create: rewards.map((reward) => ({
             rewardId: reward.rewardId,
@@ -76,16 +106,20 @@ export class OrderService {
     });
 
     await this.prisma.customer.update({
-      where: { id: order.customerId },
+      where: { id: customerId },
       data: {
         points: { decrement: rewardPoints },
       },
     });
 
+    await this.prisma.cartItem.deleteMany({
+      where: { customerId },
+    });
+
     return order;
   }
 
-  // Tính điểm từ danh sách loại vật liệu
+
   private async calculatePoints(items: { typeName: string; quantity: number }[]): Promise<number> {
     let total = 0;
     for (const item of items) {
@@ -152,5 +186,55 @@ export class OrderService {
 
     if (!order) throw new NotFoundException('Order not found');
     return order;
+  }
+  async getRewardOrders(userId: number, status?: string) {
+    return this.prisma.order.findMany({
+      where: {
+        customerId: userId,
+        type: 'REWARD',
+        ...(status ? { status } : {}),
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+  async getRewardOrderDetail(orderId: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        rewards: {
+          include: {
+            reward: true, // để lấy tên và điểm phần thưởng
+          },
+        },
+        customer: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!order || order.type !== 'REWARD') {
+      throw new NotFoundException('Không tìm thấy đơn hàng đổi thưởng.');
+    }
+
+    const items = order.rewards.map((item) => ({
+      name: item.reward.name,
+      quantity: item.quantity,
+      points: item.reward.points,
+      totalPoints: item.reward.points * item.quantity,
+    }));
+
+    const totalPoints = items.reduce((sum, item) => sum + item.totalPoints, 0);
+
+    return {
+      id: order.id,
+      code: order.code,
+      date: order.date,
+      status: order.status,
+      items,
+      totalPoints,
+      address: order.customer.user.address,
+    };
   }
 }

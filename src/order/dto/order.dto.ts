@@ -30,12 +30,6 @@ export class CreateMaterialOrderDto {
 }
 
 export class CreateRewardOrderDto {
-  customerId: number;
-  centerId: number;
-  transport: string;
-  status: string;
-  rewards: {
-    rewardId: number;
-    quantity: number;
-  }[];
+  @IsInt()
+  userId: number;
 }

@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Query,
+  ParseIntPipe
 } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { OrderService } from './order.service';
@@ -24,10 +25,10 @@ export class OrderController {
     return this.orderService.createMaterialOrder(dto);
   }
 
-  @Post('reward')
+  @Post('reward/:id')
   @ApiOperation({ summary: 'Tạo đơn hàng đổi quà' })
-  createRewardOrder(@Body() dto: CreateRewardOrderDto) {
-    return this.orderService.createRewardOrder(dto);
+  createRewardOrder(@Param('id') id: string) {
+    return this.orderService.createRewardOrder(Number(id));
   }
 
   @Get()
@@ -45,5 +46,18 @@ export class OrderController {
   @ApiOperation({ summary: 'Lấy chi tiết đơn hàng theo ID' })
   getOrderById(@Param('id') id: string) {
     return this.orderService.getOrderById(Number(id));
+  }
+
+  @Get('reward/:id')
+  @ApiOperation({ summary: 'Lấy danh sách đơn đổi thưởng theo user và trạng thái' })
+  getRewardOrders(
+    @Param('id') userId: string,
+    @Query('status') status: string = 'pending',
+  ) {
+    return this.orderService.getRewardOrders(Number(userId), status);
+  }
+  @Get('reward/:id/detail')
+  async getRewardOrderDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.orderService.getRewardOrderDetail(id);
   }
 }

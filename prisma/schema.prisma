@@ -13,6 +13,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum OrderType {
+  MATERIAL
+  REWARD
+}
 
 model User {
   id        Int       @id @default(autoincrement())
@@ -91,6 +95,7 @@ model Type {
   name          String    @id
   points       Int
   materialId   Int
+  imageUrl    String?
   isHazardous  Boolean
   description    String    @default("No description yet")
   material     Material  @relation(fields: [materialId], references: [id])
@@ -113,9 +118,13 @@ model Reward {
 model Order {
   id          Int         @id @default(autoincrement())
   date        DateTime
+  receiveDate DateTime @default(now())
   code        String      @unique
   transport   String
   status      String
+  note        String?
+  imageUrl    String?
+  type        OrderType   @default(MATERIAL)
   points      Int         @default(0)
   customerId  Int
   centerId    Int
