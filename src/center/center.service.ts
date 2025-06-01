@@ -79,6 +79,7 @@ export class CenterService {
         id: center.id,
         name: center.name,
         address: center.address,
+        imageUrl: center.imageUrl,
         materials: center.collects.map(c => ({
             name: c.type.name,
             points: c.type.points,

@@ -42,6 +42,7 @@ model Customer {
   rewards  CustomerReward[]
   user     User     @relation(fields: [id], references: [id])
   orders   Order[]
+  cartItems CartItem[]
 }
 
 model Center {
@@ -106,6 +107,7 @@ model Reward {
   imageUrl     String?
   orderRewards OrderReward[]
   receivers    CustomerReward[]
+  cartItems CartItem[]
 }
 
 model Order {
@@ -169,3 +171,15 @@ model CustomerReward {
 
   @@unique([customerId, rewardId])
 }
+
+model CartItem {
+  customerId Int
+  rewardId   Int
+  quantity   Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  reward     Reward   @relation(fields: [rewardId], references: [id])
+
+  @@id([customerId, rewardId])
+} 

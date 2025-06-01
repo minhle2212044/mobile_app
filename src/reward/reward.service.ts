@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException} from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import { Reward } from '@prisma/client';
+import { CartItem, Reward } from '@prisma/client';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
@@ -192,4 +192,141 @@ export class RewardService {
       return { status: 'added' };
     }
   }
+
+  // 1. Thêm sản phẩm vào giỏ hàng
+async addToCart(customerId: number, rewardId: number): Promise<CartItem> {
+  const reward = await this.prisma.reward.findUnique({ where: { id: rewardId } });
+  if (!reward) throw new NotFoundException('Reward not found');
+
+  try {
+    return await this.prisma.cartItem.create({
+      data: {
+        customerId,
+        rewardId,
+        quantity: 1,
+      },
+    });
+  } catch (error) {
+    // Nếu đã tồn tại thì tăng số lượng lên
+    return this.incrementQuantity(customerId, rewardId);
+  }
+}
+
+// 2. Tăng số lượng
+async incrementQuantity(customerId: number, rewardId: number): Promise<CartItem> {
+  console.log('Incrementing quantity for customerId:', customerId, 'rewardId:', rewardId);
+  const item = await this.prisma.cartItem.findUnique({
+    where: {
+      customerId_rewardId: {
+        customerId,
+        rewardId,
+      },
+    },
+  });
+
+  if (!item) throw new NotFoundException('Item not found in cart');
+
+  return this.prisma.cartItem.update({
+    where: {
+      customerId_rewardId: {
+        customerId,
+        rewardId,
+      },
+    },
+    data: {
+      quantity: item.quantity + 1,
+    },
+  });
+}
+
+// 3. Giảm số lượng (nếu = 0 thì xóa)
+async decrementQuantity(customerId: number, rewardId: number): Promise<{ message: string }> {
+  console.log('Incrementing quantity for customerId:', customerId, 'rewardId:', rewardId);
+  const item = await this.prisma.cartItem.findUnique({
+    where: {
+      customerId_rewardId: {
+        customerId,
+        rewardId,
+      },
+    },
+  });
+
+  if (!item) throw new NotFoundException('Item not found in cart');
+
+  if (item.quantity <= 1) {
+    await this.prisma.cartItem.delete({
+      where: {
+        customerId_rewardId: {
+          customerId,
+          rewardId,
+        },
+      },
+    });
+    return { message: 'Item removed from cart' };
+  }
+
+  await this.prisma.cartItem.update({
+    where: {
+      customerId_rewardId: {
+        customerId,
+        rewardId,
+      },
+    },
+    data: {
+      quantity: item.quantity - 1,
+    },
+  });
+
+  return { message: 'Quantity decreased' };
+}
+
+async getCartItems(customerId: number): Promise<(CartItem & { reward: Reward })[]> {
+  return this.prisma.cartItem.findMany({
+    where: { customerId },
+    include: {
+      reward: true,
+    },
+  });
+}
+
+async getCartSummary(customerIdRaw: number | string): Promise<{
+  items: (CartItem & { reward: Reward })[];
+  totalQuantity: number;
+  totalPoints: number;
+  Points: number;
+  address: string;
+}> {
+  const customerId = Number(customerIdRaw);
+
+  // Lấy giỏ hàng
+  const items = await this.prisma.cartItem.findMany({
+    where: { customerId },
+    include: { reward: true },
+  });
+
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPoints = items.reduce((sum, item) => sum + item.quantity * item.reward.points, 0);
+
+  const customer = await this.prisma.customer.findUnique({
+    where: { id: customerId },
+    include: {
+      user: {
+        select: { address: true },
+      },
+    },
+  });
+
+  if (!customer || !customer.user) {
+    throw new Error('Customer or user not found');
+  }
+
+  return {
+    items,
+    totalQuantity,
+    totalPoints,
+    Points: customer.points,
+    address: customer.user.address,
+  };
+}
+
 } 

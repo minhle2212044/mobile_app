@@ -183,4 +183,38 @@ export class RewardController {
 
     return this.rewardService.toggleFavoriteReward(uid, rid);
   }
+
+  @Post('cart')
+  async addToCart(
+    @Query('id') userId: number,
+    @Body('rewardId') rewardId: number,
+  ) {
+    return this.rewardService.addToCart(Number(userId), rewardId);
+  }
+
+  @Patch('increase/:id')
+  async increaseQuantity(
+    @Param('id') userId: number,
+    @Body('rewardId') rewardId: number,
+  ) {
+    return this.rewardService.incrementQuantity(Number(userId), rewardId);
+  }
+
+  @Patch('decrease/:id')
+  async decreaseQuantity(
+    @Param('id') userId: number,
+    @Body('rewardId') rewardId: number,
+  ) {
+    return this.rewardService.decrementQuantity(Number(userId), rewardId);
+  }
+
+  @Get('cart/:id')
+  async getCartItems(@Param('id') userId: number) {
+    return this.rewardService.getCartItems(Number(userId));
+  }
+
+  @Get(':userId/summary')
+  async getCartSummary(@Param('userId') userId: number) {
+    return this.rewardService.getCartSummary(Number(userId));
+  }
 }

@@ -43,6 +43,8 @@ export class CenterDetailDto {
   @ApiProperty()
   address: string;
 
+  @ApiProperty()
+  imageUrl: string | null;
   @ApiProperty({ type: [TypeDto] })
   materials: TypeDto[];
 
