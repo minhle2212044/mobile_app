@@ -87,4 +87,9 @@ export class TypeService {
     ]);
     return { data, total };
   }
+  async getTypeById(id: number): Promise<Type> {
+    const type = await this.prisma.type.findUnique({ where: { id } });
+    if (!type) throw new NotFoundException(`Type with ID ${id} not found`);
+  return type;
+}
 }

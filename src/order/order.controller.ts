@@ -56,8 +56,23 @@ export class OrderController {
   ) {
     return this.orderService.getRewardOrders(Number(userId), status);
   }
+
+  @Get('material/:id')
+  @ApiOperation({ summary: 'Lấy danh sách đơn thu gom theo user và trạng thái' })
+  getMaterialOrders(
+    @Param('id') userId: string,
+    @Query('status') status: string = 'pending',
+  ) {
+    return this.orderService.getMaterialOrders(Number(userId), status);
+  }
+
   @Get('reward/:id/detail')
   async getRewardOrderDetail(@Param('id', ParseIntPipe) id: number) {
     return this.orderService.getRewardOrderDetail(id);
+  }
+
+  @Get('material/:id/detail')
+  async getMaterialOrderDetail(@Param('id', ParseIntPipe) id: number) {
+    return this.orderService.getMaterialOrderDetail(id);
   }
 }

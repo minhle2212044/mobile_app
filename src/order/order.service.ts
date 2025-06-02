@@ -1,11 +1,12 @@
 // order.service.ts
 import { Injectable, NotFoundException, BadRequestException,  } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateRewardOrderDto, CreateMaterialOrderDto } from './dto';
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private cloudinary: CloudinaryService) {}
 
   private generateOrderCode(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -18,18 +19,27 @@ export class OrderService {
 
     return code;
   }
-   async createMaterialOrder(data: CreateMaterialOrderDto) {
-    const { items, ...orderData } = data;
+   async createMaterialOrder(data: CreateMaterialOrderDto, file?: Express.Multer.File) {
+    const { items, note, receiveDate, schedule, ...orderData } = data;
 
     const points = await this.calculatePoints(items || []);
     const code = this.generateOrderCode();
 
+    let imageUrl = '';
+    if (file) {
+      const uploadRes = await this.cloudinary.uploadImage(file, 'orders');
+      imageUrl = uploadRes.secure_url;
+    }
     const order = await this.prisma.order.create({
       data: {
         ...orderData,
         code,
         date: new Date(),
+        receiveDate: receiveDate ? new Date(receiveDate) : new Date(),
         points,
+        note,
+        imageUrl,
+        schedule,
         items: {
           create: items.map((item) => ({
             typeName: item.typeName,
@@ -50,7 +60,10 @@ export class OrderService {
       },
     });
 
-    return order;
+    return {
+      ...order,
+      points,
+    };
   }
 
   
@@ -89,7 +102,12 @@ export class OrderService {
         status: 'PENDING',
         code,
         date: new Date(),
-        receiveDate: new Date(), // cần nếu trường này là NOT NULL
+        receiveDate: (() => {
+          const today = new Date();
+          const nextWeek = new Date(today);
+          nextWeek.setDate(today.getDate() + 7);
+          return nextWeek;
+        })(),
         points: -rewardPoints,
         type: "REWARD",
         rewards: {
@@ -197,6 +215,17 @@ export class OrderService {
       orderBy: { date: 'desc' },
     });
   }
+  async getMaterialOrders(userId: number, status?: string) {
+    return this.prisma.order.findMany({
+      where: {
+        customerId: userId,
+        type: 'MATERIAL',
+        ...(status ? { status } : {}),
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   async getRewardOrderDetail(orderId: number) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -237,4 +266,68 @@ export class OrderService {
       address: order.customer.user.address,
     };
   }
+
+  async getMaterialOrderDetail(orderId: number) {
+  const order = await this.prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      items: {
+        include: {
+          type: true, // để lấy thông tin loại vật liệu
+        },
+      },
+      customer: {
+        include: {
+          user: true, // lấy thông tin người dùng từ customer
+        },
+      },
+      center: {
+        include: {
+          days: true, // lấy thêm lịch làm việc của trung tâm
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new NotFoundException(`Không tìm thấy đơn hàng với ID ${orderId}`);
+  }
+
+  // Format thời gian nhận
+  const formattedReceiveDate = order.receiveDate.toLocaleString('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+  return {
+    orderId: order.id,
+    code: order.code,
+    address: order.center.address,
+    receiveTime: formattedReceiveDate,
+    totalPoints: order.points,
+    status: order.status,
+    schedule: order.schedule,
+    materials: order.items.map((item) => ({
+      typeName: item.typeName,
+      quantity: item.quantity,
+      isHazardous: item.type.isHazardous,
+      pointsPerKg: item.type.points,
+    })),
+    sender: {
+      name: order.customer.user.name,
+      phone: order.customer.user.tel,
+      email: order.customer.user.email,
+      address: order.customer.user.address,
+    },
+    workingTimes: order.center.days.map((day) => ({
+      day: day.day,
+      startTime: day.startTime.toISOString(),
+      endTime: day.endTime.toISOString(),
+    })),
+  };
+}
+
+
 }

@@ -57,4 +57,9 @@ export class TypeController {
     const limitNum = parseInt(limit) || 10;
     return this.materialService.getTypesByMaterialId(+id, pageNum, limitNum);
   }
+  
+  @Get('type/:id')
+  async getTypeById(@Param('id') id: string): Promise<Type> {
+    return this.materialService.getTypeById(+id);
+  }
 }

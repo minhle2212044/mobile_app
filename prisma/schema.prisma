@@ -122,6 +122,7 @@ model Order {
   code        String      @unique
   transport   String
   status      String
+  schedule    String @default("8h-12h")
   note        String?
   imageUrl    String?
   type        OrderType   @default(MATERIAL)

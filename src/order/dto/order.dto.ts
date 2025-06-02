@@ -23,6 +23,9 @@ export class CreateMaterialOrderDto {
   centerId: number;
   transport: string;
   status: string;
+  note?: string;
+  schedule: string;
+  receiveDate?: Date
   items: {
     typeName: string;
     quantity: number;
