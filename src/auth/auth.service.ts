@@ -119,6 +119,14 @@ export class AuthService {
                 secret: process.env.REFRESH_TOKEN_SECRET,
             }))
 
+            const user = await this.prisma.user.findUnique({
+              where: { id: payload.sub },
+            });
+
+            if (!user || user.accessToken !== refresh_token) {
+              throw new ForbiddenException('Invalid refresh token');
+            }
+
             return await this.signToken(payload.sub, payload.email);
         } catch (err) {
             throw new ForbiddenException(err);
@@ -146,7 +154,7 @@ export class AuthService {
 
         try {
             const token = await this.jwt.signAsync(payload, {
-                expiresIn: '15m',
+                expiresIn: '75m',
                 secret: secret
             })
 

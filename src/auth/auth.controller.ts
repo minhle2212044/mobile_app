@@ -148,4 +148,9 @@ export class AuthController {
 
     return this.authService.verifyToken(token);
   }
+
+  @Post('refresh')
+  async refreshAccessToken(@Body('refresh_token') refresh_token: string) {
+    return await this.authService.reSignAccessToken(refresh_token);
+  }
 }
