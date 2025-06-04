@@ -99,7 +99,7 @@ export class OrderService {
         customerId,
         centerId: 2,
         transport: 'Xe máy',
-        status: 'PENDING',
+        status: 'pending',
         code,
         date: new Date(),
         receiveDate: (() => {
